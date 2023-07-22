@@ -140,3 +140,36 @@ class Encoder:
         for encoder in self.encoder_list:
             res = encoder(res)
         return res
+
+
+class DecoderLayer:
+    def __init__(self, d_model, d_ff, num_heads):
+        self.masked_mha = MultiHeadAttention(d_model, num_heads)
+        self.mha = MultiHeadAttention(d_model, num_heads)
+        self.ff = PositionWiseFeedForwardNet(d_ff, d_model)
+        self.norm = nn.LayerNorm(d_model)
+
+    def forward(self, inp, enc_out, target_mask, source_mask):
+
+        inp2 = self.norm(self.masked_mha(Q=inp, K=inp, V=inp, mask=target_mask) + inp)
+        inp3 = self.norm(
+            self.mha(Q=inp2, K=enc_out, V=enc_out, mask=source_mask) + inp2
+        )
+        out = self.norm(self.ff(inp3) + inp3)
+
+        return out
+
+
+class Decoder:
+    def __init__(self, d_model, d_ff, num_heads, num_decoders):
+        self.decoder_list = [
+            DecoderLayer(d_model, d_ff, num_heads) for _ in range(num_decoders)
+        ]
+
+    def forward(self, inp, enc_out, source_mask, target_mask):
+
+        res = inp
+        for dec in self.decoder_list:
+            res = dec(res, enc_out, target_mask, source_mask)
+
+        return res
