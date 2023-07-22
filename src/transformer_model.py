@@ -22,24 +22,29 @@ class MultiHeadAttention(nn.Module):
         self.V_proj_net = nn.Linear(d_model, d_model)
         self.out_proj_net = nn.Linear(d_model, d_model)
 
-    def attention(self, Q_proj, K_proj, V_proj):
+    def attention(self, Q, K, V, mask):
         scale = math.sqrt(self.d_k)
 
-        # (B, num_heads, T, d_k), (B, num_heads, S, d_k) -> (B, num_heads, T, S)
-        attention_weights = torch.matmul(Q_proj, K_proj.transpose(-2, -1))
+        # (B, num_heads, S or T, d_k), (B, num_heads, S or T, d_k) -> (B, num_heads, S or T, S or T)
+        scores = torch.matmul(Q, K.transpose(-2, -1))
 
-        # Mask out target (Q_proj) and Source (K_proj)
+        # Mask the scores given a Boolean Mask
+        # Dim may vary based on use case
+        # Causal Masking in Self Attention in Decoder: (B, 1, T, T)
+        # Masking Pad Tokens: (B, 1, 1, S)
+        # Gets broadcasted to shape of attention weights and masks where mask = 1
+        scores = scores.masked_fill(mask, float("-inf"))
 
         # Softmax along last dimension. Intuitively every element from the Target sequence
         # gets a distribution over the Source sequence.
-        attention_weights = nn.functional.softmax(attention_weights / scale, dim=-1)
+        attention_weights = nn.functional.softmax(scores / scale, dim=-1)
 
         # (B, num_heads, T, S), (B, num_heads, S, d_v) -> (B, num_heads, T, d_v)
-        attention = torch.matmul(attention_weights, V_proj)
+        attention = torch.matmul(attention_weights, V)
 
         return attention, attention_weights
 
-    def forward(self, Q, K, V, source_mask, target_mask):
+    def forward(self, Q, K, V, mask):
         B = Q.shape[0]
         T = Q.shape[1]
         S = K.shape[1]
@@ -54,7 +59,7 @@ class MultiHeadAttention(nn.Module):
         V_proj = self.V_proj_net(V).view(B, S, self.num_heads, self.d_v).transpose(1, 2)
 
         # Get the output of attention along with attention weights
-        attention_out, attention_weights = self.attention(Q_proj, K_proj, V_proj)
+        attention_out, attention_weights = self.attention(Q_proj, K_proj, V_proj, mask)
 
         # (B, num_heads, T, d_v) -> (B, T, num_heads * d_v = d_model)
         attention_out = attention_out.reshape(B, -1, self.num_heads * self.d_v)
