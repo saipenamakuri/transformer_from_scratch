@@ -1,0 +1,27 @@
+[tool.poetry]
+name = "transformer-from-scratch"
+version = "0.1.0"
+description = ""
+authors = ["satya <saipenamakuri@gmail.com>"]
+readme = "README.md"
+packages = [{include = "transformer_from_scratch"}]
+
+[tool.poetry.dependencies]
+python = "^3.10"
+torch = {version = "^2.0.1+cu118", source = "pytorch-gpu-src"}
+torchvision = {version = "^0.15.2+cu118", source = "pytorch-gpu-src"}
+torchaudio = {version = "^2.0.2+cu118", source = "pytorch-gpu-src"}
+
+
+[[tool.poetry.source]]
+name = "pytorch-gpu-src"
+url = "https://download.pytorch.org/whl/cu118"
+priority = "explicit"
+
+
+[tool.poetry.group.dev.dependencies]
+pre-commit = "^3.3.3"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
