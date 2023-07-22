@@ -119,12 +119,13 @@ class EncoderLayer:
     def __init__(self, d_model, d_ff, num_heads):
         self.mha = MultiHeadAttention(d_model, num_heads)
         self.ff = PositionWiseFeedForwardNet(d_ff, d_model, num_heads)
-        self.layer_norm = nn.LayerNorm(d_model)
+        self.layer_norm1 = nn.LayerNorm(d_model)
+        self.layer_norm2 = nn.LayerNorm(d_model)
 
     def forward(self, inp):
         # (B, T, d_model) -> (B, T, d_model)
-        inp2 = self.layer_norm(self.mha(Q=inp, K=inp, V=inp) + inp)
-        out = self.layer_norm(self.ff(inp2) + inp2)
+        inp2 = self.layer_norm1(self.mha(Q=inp, K=inp, V=inp) + inp)
+        out = self.layer_norm2(self.ff(inp2) + inp2)
 
         return out
 
@@ -147,15 +148,17 @@ class DecoderLayer:
         self.masked_mha = MultiHeadAttention(d_model, num_heads)
         self.mha = MultiHeadAttention(d_model, num_heads)
         self.ff = PositionWiseFeedForwardNet(d_ff, d_model)
-        self.norm = nn.LayerNorm(d_model)
+        self.norm1 = nn.LayerNorm(d_model)
+        self.norm2 = nn.LayerNorm(d_model)
+        self.norm3 = nn.LayerNorm(d_model)
 
     def forward(self, inp, enc_out, target_mask, source_mask):
 
-        inp2 = self.norm(self.masked_mha(Q=inp, K=inp, V=inp, mask=target_mask) + inp)
-        inp3 = self.norm(
+        inp2 = self.norm1(self.masked_mha(Q=inp, K=inp, V=inp, mask=target_mask) + inp)
+        inp3 = self.norm2(
             self.mha(Q=inp2, K=enc_out, V=enc_out, mask=source_mask) + inp2
         )
-        out = self.norm(self.ff(inp3) + inp3)
+        out = self.norm3(self.ff(inp3) + inp3)
 
         return out
 
