@@ -119,9 +119,9 @@ class EncoderLayer:
         self.layer_norm1 = nn.LayerNorm(d_model)
         self.layer_norm2 = nn.LayerNorm(d_model)
 
-    def forward(self, inp):
+    def forward(self, inp, mask):
         # (B, T, d_model) -> (B, T, d_model)
-        inp2 = self.layer_norm1(self.mha(Q=inp, K=inp, V=inp) + inp)
+        inp2 = self.layer_norm1(self.mha(Q=inp, K=inp, V=inp, mask=mask) + inp)
         out = self.layer_norm2(self.ff(inp2) + inp2)
 
         return out
@@ -133,10 +133,10 @@ class Encoder:
             EncoderLayer(d_model, d_ff, num_heads) for _ in range(num_encoders)
         ]
 
-    def forward(self, inp):
+    def forward(self, inp, mask):
         res = inp
         for encoder in self.encoder_list:
-            res = encoder(res)
+            res = encoder(res, mask)
         return res
 
 
@@ -173,3 +173,33 @@ class Decoder:
             res = dec(res, enc_out, target_mask, source_mask)
 
         return res
+
+
+class Transformer:
+    def __init__(
+        self, d_model, d_ff, num_heads, num_encoders, num_decoders, num_tokens
+    ):
+        self.decoder = Decoder(d_model, d_ff, num_heads, num_decoders)
+        self.encoder = Encoder(d_model, d_ff, num_heads, num_encoders)
+        self.position_encoder = PositionalEncoding(d_model=d_model)
+        self.embedding = nn.Embedding(num_tokens, d_model)
+        self.linear = nn.Linear(d_model, num_tokens)
+        self.softmax = nn.Softmax(dim=-1)
+
+    def forward(self, inp, out, source_mask, target_mask):
+        # inp will be a Tensor of size (B, T), each element is a token index
+
+        inp_embedding = self.embedding(inp)
+        out_embedding = self.embedding(out)
+
+        inp_embedding = self.position_encoder(inp_embedding)
+        out_embedding = self.position_encoder(out_embedding)
+
+        enc_out = self.encoder(inp_embedding, source_mask)
+        dec_out = self.decoder(out_embedding, enc_out, source_mask, target_mask)
+
+        # (B, T, d_model) -> (B, T, num_tokens)
+        out = self.linear(dec_out)
+        out = self.softmax(out)
+
+        return out
