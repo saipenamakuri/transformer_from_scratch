@@ -2,9 +2,6 @@ import torch
 from torch import nn
 import math
 import torch
-import numpy as np
-
-torch.nn.Transformer
 
 
 class MultiHeadAttention(nn.Module):
