@@ -177,13 +177,14 @@ class Decoder:
 
 class Transformer:
     def __init__(
-        self, d_model, d_ff, num_heads, num_encoders, num_decoders, num_tokens
+        self, d_model, d_ff, num_heads, num_encoders, num_decoders, num_encoder_tokens, num_decoder_tokens
     ):
         self.decoder = Decoder(d_model, d_ff, num_heads, num_decoders)
         self.encoder = Encoder(d_model, d_ff, num_heads, num_encoders)
         self.position_encoder = PositionalEncoding(d_model=d_model)
-        self.embedding = nn.Embedding(num_tokens, d_model)
-        self.linear = nn.Linear(d_model, num_tokens)
+        self.encoder_embedding = nn.Embedding(num_encoder_tokens, d_model)
+        self.decoder_embedding = nn.Embedding(num_decoder_tokens, d_model)
+        self.linear = nn.Linear(d_model, num_decoder_tokens)
         self.softmax = nn.Softmax(dim=-1)
 
     def forward(self, inp, out, source_mask, target_mask):
