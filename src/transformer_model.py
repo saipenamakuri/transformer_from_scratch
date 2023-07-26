@@ -177,7 +177,14 @@ class Decoder:
 
 class Transformer:
     def __init__(
-        self, d_model, d_ff, num_heads, num_encoders, num_decoders, num_encoder_tokens, num_decoder_tokens
+        self,
+        d_model,
+        d_ff,
+        num_heads,
+        num_encoders,
+        num_decoders,
+        num_encoder_tokens,
+        num_decoder_tokens,
     ):
         self.decoder = Decoder(d_model, d_ff, num_heads, num_decoders)
         self.encoder = Encoder(d_model, d_ff, num_heads, num_encoders)
