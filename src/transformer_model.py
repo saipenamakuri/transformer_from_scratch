@@ -190,8 +190,8 @@ class Transformer:
     def forward(self, inp, out, source_mask, target_mask):
         # inp will be a Tensor of size (B, T), each element is a token index
 
-        inp_embedding = self.embedding(inp)
-        out_embedding = self.embedding(out)
+        inp_embedding = self.encoder_embedding(inp)
+        out_embedding = self.decoder_embedding(out)
 
         inp_embedding = self.position_encoder(inp_embedding)
         out_embedding = self.position_encoder(out_embedding)
